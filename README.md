@@ -2,8 +2,6 @@
 
 Write a [vindinium.org](http://vindinium.org/) bot in node.js!
 
-BSD licensed.
-
 ### Install
 
     npm install vindinium-client
@@ -109,8 +107,14 @@ If you'd like to take manual control, that's possible too:
 
 The above parameters are required. Additional optional parameters are:
 
- - `log`: a log function, call after each response, that takes a state object.
+ - `log`: a log function taking state, called after each response.
  - `context`: an initial context object.
  - `serverUrl`: an alternative server to use.
  - `turns`: the number of turns to play, only for training mode.
  - `map`: the name of the map to play on, only for training mode.
+
+### Credit
+
+Based on [ozten/vindinium-starter-nodejs](https://github.com/ozten/vindinium-starter-nodejs)
+
+[BSD licensed](http://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_.28.22Revised_BSD_License.22.2C_.22New_BSD_License.22.2C_or_.22Modified_BSD_License.22.29).
