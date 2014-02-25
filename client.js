@@ -62,7 +62,8 @@ function client(config, cb) {
 
 // Common request processing.
 function gameRequest(url, form, cb) {
-    request.post({ url: url, form: form }, function(err, res, body) {
+    var params = { url: url, form: form };
+    var req = request.post(params, function(err, res, body) {
         if (err)
             return cb(err);
         if (res.statusCode !== 200)
@@ -73,6 +74,9 @@ function gameRequest(url, form, cb) {
 
         cb(null, body);
     });
+
+    req.start();
+    req.req.setSocketKeepAlive(true, 10000);
 }
 
 // Export the client and CLI.
