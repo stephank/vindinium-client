@@ -4,7 +4,7 @@ function cli(bot, log) {
     var fs = require('fs');
     var cluster = require('cluster');
 
-    var mode, numGames, numChildren, numQueue;
+    var mode, numGames, numChildren, numQueue, numGroup;
     var numTurns, mapName, cfgFile;
     var argv = require('optimist').argv;
 
@@ -31,21 +31,31 @@ function cli(bot, log) {
     // indefinitely. The games can be processed in parallel using
     // '<workers>,<games>' notation. When processing in parallel, a limit can
     // be set on the number of workers waiting in the queue for a new game
-    // using '<limit>,<workers>,<games>' notation.
+    // using '<limit>,<workers>,<games>' notation. Finally, queuing can be
+    // attempted in groups with '<group>,<limit>,<workers>,<games>', for
+    // teaming up. (But there's no guarantee they'll end up in the same game.)
+    numChildren = numQueue = numGroup = 1;
+
     if (numGames === 'INF')
         numGames = Infinity;
 
     if (typeof(numGames) === 'string') {
-        var parts = numGames.split(',', 3);
+        var parts = numGames.split(',', 4);
         if (parts.length === 2) {
             numChildren = parseInt(parts[0], 10);
             numGames = parts[1];
             numQueue = numChildren;
         }
-        else {
+        else if (parts.length === 3) {
             numQueue = parseInt(parts[0], 10);
             numChildren = parseInt(parts[1], 10);
             numGames = parts[2];
+        }
+        else {
+            numGroup = parseInt(parts[0], 10);
+            numQueue = parseInt(parts[1], 10);
+            numChildren = parseInt(parts[2], 10);
+            numGames = parts[3];
         }
 
         if (numGames === 'INF')
@@ -53,14 +63,11 @@ function cli(bot, log) {
         else
             numGames = parseInt(numGames, 10);
     }
-    else {
-        numChildren = 1;
-        numQueue = numChildren;
-    }
 
     if (!numGames || numGames < 1) usage();
     if (!numChildren || numChildren < 1) usage();
     if (!numQueue || numQueue < 1 || numQueue > numChildren) usage();
+    if (!numGroup || numGroup < 1 || numGroup > numQueue) usage();
 
     var gameNo = 0;
 
@@ -138,14 +145,18 @@ function cli(bot, log) {
     // Repeatedly called on the master when counter change.
     // Make sure as many processes are running as requested.
     function masterLoop(config) {
-        while (numGames && numChildren && numQueue) {
-            var worker = cluster.fork();
-            worker.on('exit', onExit);
-            worker.on('message', onMessage);
+        while (numGames >= numGroup &&
+                numChildren >= numGroup &&
+                numQueue >= numGroup) {
+            for (var i = 0; i < numGroup; i++) {
+                var worker = cluster.fork();
+                worker.on('exit', onExit);
+                worker.on('message', onMessage);
 
-            numGames--;
-            numChildren--;
-            numQueue--;
+                numGames--;
+                numChildren--;
+                numQueue--;
+            }
         }
 
         function onExit() {

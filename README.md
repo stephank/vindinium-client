@@ -65,9 +65,14 @@ Run 20 arena matches, in 4 workers, queue only 1 at the same time:
 
     ./bot.js -a 1,4,20 config.json
 
-Run arena matches indefinitely, in 4 workers, queuing 1 at a time:
+Run arena matches indefinitely, in 4 workers, queuing 2 at a time:
 
-    ./bot.js -a 1,4,INF config.json
+    ./bot.js -a 2,4,INF config.json
+
+Same as above, but queue in groups of 2. This is to attempt team strategies,
+but the game offers no guarantee that you'll actually end up in the same game.
+
+    ./bot.js -a 2,2,4,INF config.json
 
 At any point, the bot can be interrupted with <kbd>Ctrl</kbd> + <kbd>C</kbd>.
 This will finish any running arena matches. Press again to stop immediately.
