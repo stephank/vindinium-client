@@ -76,7 +76,7 @@ function cli(bot, log) {
         readConfig(function(config) {
             config.signalMaster = true;
             client(config, function(err, state) {
-                if (err) console.error('Request error: %s', err.message);
+                if (err) console.error(err.stack || err.message || err);
                 cluster.worker.disconnect();
             });
         });
@@ -164,7 +164,7 @@ function cli(bot, log) {
     // Callback loop for when we're doing serial processing.
     function singleProcessLoop(config) {
         client(config, function(err, state) {
-            if (err) console.error('Request error: %s', err.message);
+            if (err) console.error(err.stack || err.message || err);
             if (--numGames > 0) singleProcessLoop(config);
         });
     }
