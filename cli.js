@@ -77,7 +77,7 @@ function cli(bot, log) {
         usage('Queue size cannot be larger than number of workers.');
     if (groupSize > queueSize)
         usage('Group size cannot be large than queue size.');
-    if (numGames % groupSize !== 0)
+    if (numGames !== Infinity && numGames % groupSize !== 0)
         usage('Number of games must be multiple of group size.');
 
     // On the first interrupt during an arena match, we finish running games
