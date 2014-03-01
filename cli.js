@@ -90,7 +90,6 @@ function cli(bot, log) {
 
         process.on('SIGINT', function() {
             if (abortOnInterrupt) process.exit(1);
-
             abortOnInterrupt = true;
         });
     }
@@ -101,10 +100,10 @@ function cli(bot, log) {
         readConfig(singleProcessLoop);
 
         process.on('SIGINT', function() {
-            if (abortOnInterrupt) process.exit(1);
-
-            abortOnInterrupt = true;
             numGames = 0;
+
+            if (abortOnInterrupt) process.exit(1);
+            abortOnInterrupt = true;
             warnGraceful();
         });
     }
@@ -114,10 +113,10 @@ function cli(bot, log) {
         readConfig(masterLoop);
 
         process.on('SIGINT', function() {
-            if (abortOnInterrupt) return;
-
-            abortOnInterrupt = true;
             numGames = 0;
+
+            if (abortOnInterrupt) return;
+            abortOnInterrupt = true;
             warnGraceful();
         });
     }
