@@ -1,28 +1,24 @@
-var client = require('./client');
-
 function cli(bot, log) {
     var fs = require('fs');
     var cluster = require('cluster');
-
-    var mode, numGames, numChildren, numQueue, numGroup;
-    var numTurns, mapName, cfgFile;
+    var client = require('./client');
     var argv = require('optimist').argv;
 
     if (!log) log = defaultLog;
 
     // A config is required.
     if (argv._.length !== 1) usage();
-    cfgFile = argv._[0];
+    var cfgFile = argv._[0];
 
     // A mode must be specified.
-    if ((argv.a === undefined) === (argv.t === undefined)) usage();
+    var mode, numTurns, mapName;
+    if ((argv.a === undefined) === (argv.t === undefined))
+        usage('Must specify either -a or -t.');
     if (argv.a) {
         mode = 'arena';
-        numGames = argv.a;
     }
     else {
         mode = 'training';
-        numGames = argv.t;
         numTurns = argv.turns;
         mapName = argv.map;
     }
@@ -34,27 +30,29 @@ function cli(bot, log) {
     // using '<limit>,<workers>,<games>' notation. Finally, queuing can be
     // attempted in groups with '<group>,<limit>,<workers>,<games>', for
     // teaming up. (But there's no guarantee they'll end up in the same game.)
-    numChildren = numQueue = numGroup = 1;
+    var numGames, numWorkers, queueSize, groupSize;
+    numGames = argv.a || argv.t;
+    numWorkers = queueSize = groupSize = 1;
 
-    if (numGames === 'INF')
+    if (numGames === 'INF') {
         numGames = Infinity;
-
-    if (typeof(numGames) === 'string') {
+    }
+    else if (typeof(numGames) === 'string') {
         var parts = numGames.split(',', 4);
         if (parts.length === 2) {
-            numChildren = parseInt(parts[0], 10);
+            numWorkers = parseInt(parts[0], 10);
             numGames = parts[1];
-            numQueue = numChildren;
+            queueSize = numWorkers;
         }
         else if (parts.length === 3) {
-            numQueue = parseInt(parts[0], 10);
-            numChildren = parseInt(parts[1], 10);
+            queueSize = parseInt(parts[0], 10);
+            numWorkers = parseInt(parts[1], 10);
             numGames = parts[2];
         }
         else {
-            numGroup = parseInt(parts[0], 10);
-            numQueue = parseInt(parts[1], 10);
-            numChildren = parseInt(parts[2], 10);
+            groupSize = parseInt(parts[0], 10);
+            queueSize = parseInt(parts[1], 10);
+            numWorkers = parseInt(parts[2], 10);
             numGames = parts[3];
         }
 
@@ -64,12 +62,21 @@ function cli(bot, log) {
             numGames = parseInt(numGames, 10);
     }
 
-    if (!numGames || numGames < 1) usage();
-    if (!numChildren || numChildren < 1) usage();
-    if (!numQueue || numQueue < 1 || numQueue > numChildren) usage();
-    if (!numGroup || numGroup < 1 || numGroup > numQueue) usage();
+    if (!numGames || numGames < 1)
+        usage('Invalid number of games.');
+    if (!numWorkers || numWorkers < 1)
+        usage('Invalid number of workers.');
+    if (!queueSize || queueSize < 1)
+        usage('Invalid queue size.');
+    if (!groupSize || groupSize < 1)
+        usage('Invalid group size.');
 
-    var gameNo = 0;
+    if (queueSize > numWorkers)
+        usage('Queue size cannot be larger than number of workers.');
+    if (groupSize > queueSize)
+        usage('Group size cannot be large than queue size.');
+    if (numGames % groupSize !== 0)
+        usage('Number of games must be multiple of group size.');
 
     // On the first interrupt during an arena match, we finish running games
     // gracefully. If the user interrupts again, we abort. Training matches are
@@ -96,7 +103,7 @@ function cli(bot, log) {
 
     // If no parallel processing is requested, don't use cluster at all. This
     // makes debugging and profiling easier.
-    else if (numChildren === 1) {
+    else if (numWorkers === 1) {
         readConfig(singleProcessLoop);
 
         process.on('SIGINT', function() {
@@ -144,28 +151,28 @@ function cli(bot, log) {
     // Repeatedly called on the master when counter change.
     // Make sure as many processes are running as requested.
     function masterLoop(config) {
-        while (numGames >= numGroup &&
-                numChildren >= numGroup &&
-                numQueue >= numGroup) {
-            for (var i = 0; i < numGroup; i++) {
+        while (numGames >= groupSize &&
+                numWorkers >= groupSize &&
+                queueSize >= groupSize) {
+            for (var i = 0; i < groupSize; i++) {
                 var worker = cluster.fork();
                 worker.on('exit', onExit);
                 worker.on('message', onMessage);
 
                 numGames--;
-                numChildren--;
-                numQueue--;
+                numWorkers--;
+                queueSize--;
             }
         }
 
         function onExit() {
-            numChildren++;
+            numWorkers++;
             masterLoop(config);
         }
 
         function onMessage(msg) {
             if (msg.type === 'dequeue') {
-                numQueue++;
+                queueSize++;
                 masterLoop(config);
             }
         }
@@ -190,8 +197,13 @@ function defaultLog(state) {
 }
 
 // CLI output helpers.
-function usage() {
-    console.error('Usage: %s [-a|-t] <numGames> <config>', process.argv[1]);
+function usage(msg) {
+    var path = require('path');
+
+    var script = path.basename(process.argv[1]);
+    console.error("Usage: %s <-a|-t> <num games> <config>", script);
+    if (msg) console.error(msg);
+
     process.exit(1);
 }
 
