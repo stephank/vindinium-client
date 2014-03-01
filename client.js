@@ -35,7 +35,9 @@ function client(config, cb) {
         if (state.game.finished) return cb(null, state);
 
         var url = state.playUrl;
-        bot(state, function(dir) {
+        bot(state, function(err, dir) {
+            if (err) return cb(err);
+
             // Short-hands for directions.
             if (!dir) dir = '';
             switch (dir.toLowerCase()) {

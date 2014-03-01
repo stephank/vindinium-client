@@ -15,7 +15,7 @@ This guy walks in a random direction each turn:
     function bot(state, callback) {
         var i = Math.floor(Math.random() * 4);
         var dir = dirs[i];
-        callback(dir);
+        callback(null, dir);
     };
 
     module.exports = bot;
@@ -28,11 +28,13 @@ This guy walks in a random direction each turn:
  - Put your key in a JSON file: `echo '{"key":"..."}' > config.json`
  - Run it! `./bot.js -t 1 config.json`
 
-### Directions
+### The callback
 
-For convenience, the callback will accept all of `n`, `north`, `e`, `east`,
-`s`, `south`, `w`, `west`. Anything else is interpreted as a 'stay' command.
-All of these are case-insensitive.
+The callback signature is `(error, direction)`.
+
+For convenience, all of `n`, `north`, `e`, `east`, `s`, `south`, `w`, and
+`west` are acceptable directions. These are also case-insensitive. Anything
+else is interpreted as a 'stay' command.
 
 ### Private servers
 
