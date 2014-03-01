@@ -8,6 +8,7 @@ function client(config, cb) {
     var log = config.log;
     var context = config.context || {};
     var serverUrl = config.serverUrl || 'http://vindinium.org';
+    var signalMaster = config.signalMaster;
     var playUrl;
 
     if (typeof(bot) !== 'function')
@@ -24,7 +25,7 @@ function client(config, cb) {
         if (config.map) params.map = config.map;
     }
     gameRequest(serverUrl + '/api/' + mode, params, function(err, state) {
-        if (process.send) process.send({ type: 'dequeue' });
+        if (signalMaster) process.send({ type: 'dequeue' });
         if (err) cb(err); else gameCallback(state);
     });
 
