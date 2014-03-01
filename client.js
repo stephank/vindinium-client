@@ -8,6 +8,7 @@ function client(config, cb) {
     var log = config.log;
     var context = config.context || {};
     var serverUrl = config.serverUrl || 'http://vindinium.org';
+    var playUrl;
 
     if (typeof(bot) !== 'function')
         throw new Error('bot must be set');
@@ -24,18 +25,25 @@ function client(config, cb) {
     }
     gameRequest(serverUrl + '/api/' + mode, params, function(err, state) {
         if (process.send) process.send({ type: 'dequeue' });
-        if (err) cb(err); else loop(state);
+        if (err) cb(err); else gameCallback(state);
     });
 
-    // Callback loop, runs for each turn.
-    function loop(state) {
+    // Game request callback, when it's our turn.
+    function gameCallback(state) {
         state.context = context;
 
         if (log) log(state);
         if (state.game.finished) return cb(null, state);
 
-        var url = state.playUrl;
-        bot(state, function(err, dir) {
+        playUrl = state.playUrl;
+        try { bot(state, botCallback); }
+        catch (err) { botCallback(err); }
+    }
+
+    // Bot callback, when we've decided on a move.
+    function botCallback(err, dir) {
+        // Make sure we're async to escape try-catch.
+        process.nextTick(function() {
             if (err) return cb(err);
 
             // Short-hands for directions.
@@ -53,10 +61,10 @@ function client(config, cb) {
                     dir = 'Stay'; break;
             }
 
-            // Send the turn.
+            // Send the move.
             var params = { key: key, dir: dir };
-            gameRequest(state.playUrl, params, function(err, state) {
-                if (err) cb(err); else loop(state);
+            gameRequest(playUrl, params, function(err, state) {
+                if (err) cb(err); else gameCallback(state);
             });
         });
     }
