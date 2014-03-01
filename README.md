@@ -28,19 +28,24 @@ This guy walks in a random direction each turn:
  - Put your key in a JSON file: `echo '{"key":"..."}' > config.json`
  - Run it! `./bot.js -t 1 config.json`
 
-### The callback
+### The bot function
+
+The bot function signature is `(state, callback)`.
+
+The state object is what's parsed as-is from the server.
+
+However, for each game an empty object is created, and set on the `context`
+property of all state objects for that game. You can use this to track
+additional state between turns for a single game.
 
 The callback signature is `(error, direction)`.
+
+Errors abort the game. The bot function is also executed within a try-catch, so
+that errors thrown by non-asynchronous bots are also handled.
 
 For convenience, all of `n`, `north`, `e`, `east`, `s`, `south`, `w`, and
 `west` are acceptable directions. These are also case-insensitive. Anything
 else is interpreted as a 'stay' command.
-
-### Private servers
-
-Private servers are specified in the config JSON.
-
-    { "key": "...", "serverUrl": "http://..." }
 
 ### Full CLI usage
 
@@ -69,7 +74,16 @@ This will finish any running arena matches. Press again to stop immediately.
 Training matches are always immediately stopped on interrupt.
 
 The CLI uses forking to do parallel processing. However to make debugging
-and profiling easier, requesting just 1 worker won't use the forking code.
+and profiling easier, a single worker won't use the forking code.
+
+Errors currently do not stop the CLI from queuing more games. (This will likely
+change in the future.)
+
+### Private servers
+
+Private servers are specified in the config JSON.
+
+    { "key": "...", "serverUrl": "http://..." }
 
 ### Custom logging
 
@@ -82,16 +96,10 @@ parameter to `cli`:
 
 This function is called for each server response (and before the bot).
 
-### State between turns
-
-The state object is what's parsed as-is from the server. However, for each game
-an empty object is created, and set on the `context` property of all state
-objects for that game. You can use this to track additional state between turns
-for a single game.
-
 ### Usage from node.js
 
-If you'd like to take manual control, that's possible too:
+If you'd like to take manual control, that's possible too. The main export of
+`vindinium-client` is a function to run a single game:
 
     var vindinium = require('vindinium-client');
 
