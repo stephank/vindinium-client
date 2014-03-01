@@ -95,11 +95,41 @@ Private servers are specified in the config JSON.
 The standard logging is very basic. You can override it using a second
 parameter to `cli`:
 
-    require('vindinium-client').cli(bot, function(state) {
-        console.log('Turn ' + state.game.turn);
+    var cli = require('vindinium-client');
+    cli(bot, function(ev, arg) {
+        if (ev === 'turn')
+            console.log('Turn ' + arg.game.turn);
+        else
+            cli.defaultLog(ev, arg);
     });
 
-This function is called for each server response (and before the bot).
+The function is called on several events:
+
+ - `queue`: Called right before the first request. This request may take a
+   while until enough players are in the server queue to start a match. `arg`
+   is empty.
+
+ - `start`: The game has started. Called before the bot function. `arg` is the
+   first state from the server.
+
+ - `turn`: Called after the bot function, and before the next request. `arg` is
+   the current state.
+
+ - `end`: The game has ended. `arg` is the last state from the server.
+
+ - `error`: An error has occurred. `arg` is the error.
+
+In addition, the CLI adds the following events:
+
+ - `graceful`: The user interrupted the bot, and it is gracefully finishing
+   running arena matches. (A second interrupt will abort matches.)
+
+ - `abort`: The user interrupted the bot, and running matches were aborted.
+
+The `cli.defaultLog` method is the default logging function, and can be called
+as a fallback, if you only wish to override certain events. There's also
+`cli.ranking(state)`, which generates just the ranking string (`WIN - P1 ...`)
+used in the default logger.
 
 ### Usage from node.js
 
