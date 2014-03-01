@@ -1,10 +1,12 @@
+module.exports = cli;
+
 function cli(bot, log) {
     var fs = require('fs');
     var cluster = require('cluster');
     var client = require('./client');
     var argv = require('optimist').argv;
 
-    if (!log) log = defaultLog;
+    if (!log) log = cli.defaultLog;
 
     // A config is required.
     if (argv._.length !== 1) usage();
@@ -90,7 +92,6 @@ function cli(bot, log) {
         readConfig(function(config) {
             config.signalMaster = true;
             client(config, function(err, state) {
-                if (err) console.error(err.stack || err.message || err);
                 cluster.worker.disconnect();
             });
         });
@@ -109,9 +110,14 @@ function cli(bot, log) {
         process.on('SIGINT', function() {
             numGames = 0;
 
-            if (abortOnInterrupt) process.exit(1);
-            abortOnInterrupt = true;
-            warnGraceful();
+            if (abortOnInterrupt) {
+                log('abort');
+                process.exit(1);
+            }
+            else {
+                log('graceful');
+                abortOnInterrupt = true;
+            }
         });
     }
 
@@ -122,9 +128,13 @@ function cli(bot, log) {
         process.on('SIGINT', function() {
             numGames = 0;
 
-            if (abortOnInterrupt) return;
-            abortOnInterrupt = true;
-            warnGraceful();
+            if (abortOnInterrupt) {
+                log('abort');
+            }
+            else {
+                log('graceful');
+                abortOnInterrupt = true;
+            }
         });
     }
 
@@ -181,20 +191,63 @@ function cli(bot, log) {
     // Callback loop for when we're doing serial processing.
     function singleProcessLoop(config) {
         client(config, function(err, state) {
-            if (err) console.error(err.stack || err.message || err);
             if (--numGames > 0) singleProcessLoop(config);
         });
     }
 }
 
 // Default log callback.
-function defaultLog(state) {
-    process.stdout.write('.');
-    if (state.game.finished) {
-        process.stdout.write('\n');
-        console.log('Finished %s/%s: %s', i + 1, numGames, state.viewUrl);
+cli.defaultLog = function(ev, arg) {
+    if (ev === 'turn') {
+        process.stdout.write('.');
     }
-}
+    else if (ev === 'queue') {
+        console.log('QUEUE - Waiting for players...');
+    }
+    else if (ev === 'start') {
+        console.log('START - ' + arg.viewUrl);
+    }
+    else if (ev === 'end') {
+        process.stdout.write('\n');
+        console.log(cli.ranking(arg));
+        console.log('Replay: ' + arg.viewUrl);
+    }
+    else if (ev === 'graceful') {
+        console.log('\nSIGINT: Finishing matches. Press again to abort.');
+    }
+    else if (ev === 'abort') {
+        console.log('\nSIGINT: Matches aborted.');
+    }
+    else if (ev === 'error') {
+        console.error(arg.stack || arg.message || arg);
+    }
+};
+
+// Build simple end-game ranking string.
+cli.ranking = function(state) {
+    var str;
+    var topScore = -1;
+    var topRankers = 0;
+
+    var ranking = state.game.heroes.slice();
+    ranking.sort(function(a, b) {
+        return b.gold - a.gold;
+    });
+
+    if (state.hero.gold === ranking[0].gold) {
+        if (ranking[0].gold === ranking[1].gold)
+            str = 'DRAW';
+        else
+            str = 'WIN';
+    }
+    else {
+        str = 'LOSS';
+    }
+
+    return str + ' - ' + ranking.map(function(hero) {
+        return 'P' + hero.id + ' ' + hero.name + ': ' + hero.gold + ' ◯';
+    }).join(', ');
+};
 
 // CLI output helpers.
 function usage(msg) {
@@ -211,10 +264,3 @@ function fatal(pre, err) {
     console.error(pre + ': ' + err.message);
     process.exit(2);
 }
-
-function warnGraceful() {
-    console.log('### SIGINT: Finishing matches. Press again to abort.');
-}
-
-// Export the CLI.
-module.exports = cli;
