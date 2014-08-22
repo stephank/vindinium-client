@@ -95,7 +95,7 @@ Private servers are specified in the config JSON.
 The standard logging is very basic. You can override it using a second
 parameter to `cli`:
 
-    var cli = require('vindinium-client');
+    var cli = require('vindinium-client').cli;
     cli(bot, function(ev, arg) {
         if (ev === 'turn')
             console.log('Turn ' + arg.game.turn);
