@@ -23,10 +23,9 @@ This guy walks in a random direction each turn:
         require('vindinium-client').cli(bot);
 
  - Put this in a new directory somewhere.
- - Make it executable: `chmod a+x bot.js`
  - Install the client here as well: `npm install vindinium-client`
- - Put your key in a JSON file: `echo '{"key":"..."}' > config.json`
- - Run it! `./bot.js -t 1 config.json`
+ - Put your key in a file `config.json` as follows: `{"key":"..."}`
+ - Run it! `node bot.js -t 1 config.json`
 
 ### The bot function
 
@@ -51,28 +50,28 @@ else is interpreted as a 'stay' command.
 
 Run a single training match on map `m1`:
 
-    ./bot.js -t 1 --map m1 config.json
+    node bot.js -t 1 --map m1 config.json
 
 Run 3 training matches, for 50 turns each:
 
-    ./bot.js -t 3 --turns 50 config.json
+    node bot.js -t 3 --turns 50 config.json
 
 Run 8 training matches total, parallel in 2 workers:
 
-    ./bot.js -t 2,8 config.json
+    node bot.js -t 2,8 config.json
 
 Run 20 arena matches, in 4 workers, queue only 1 at the same time:
 
-    ./bot.js -a 1,4,20 config.json
+    node bot.js -a 1,4,20 config.json
 
 Run arena matches indefinitely, in 4 workers, queuing 2 at a time:
 
-    ./bot.js -a 2,4,INF config.json
+    node bot.js -a 2,4,INF config.json
 
 Same as above, but queue in groups of 2. This is to attempt team strategies,
 but the game offers no guarantee that you'll actually end up in the same game.
 
-    ./bot.js -a 2,2,4,INF config.json
+    node bot.js -a 2,2,4,INF config.json
 
 At any point, the bot can be interrupted with <kbd>Ctrl</kbd> + <kbd>C</kbd>.
 This will finish any running arena matches. Press again to stop immediately.
