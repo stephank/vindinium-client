@@ -22,7 +22,7 @@ This guy walks in a random direction each turn:
     if (require.main === module)
         require('vindinium-client').cli(bot);
 
- - Put this in a new directory somewhere.
+ - Create an empty directory and put the above in a `bot.js` file.
  - Install the client here as well: `npm install vindinium-client`
  - Put your key in a file `config.json` as follows: `{"key":"..."}`
  - Run it! `node bot.js -t 1 config.json`
